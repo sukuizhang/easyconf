@@ -1,13 +1,9 @@
-# example
+provide some base example, config files are put in etc directory, include clojure clj files and properties files..
 
-FIXME: write description
+normal.clj: normal example, show how to use defconf and defnconf macro, and show how config item change the var value.
 
-## Usage
+validate1.clj: use a boolean return type validator.
+validate2.clj: use a string return type validator.
 
-FIXME: write
-
-## License
-
-Copyright (C) 2011 FIXME
-
-Distributed under the Eclipse Public License, the same as Clojure.
+checkfail.clj: show config check, how to open check options, and show complie error message.
+checksuccess.clj: show success config check. 
