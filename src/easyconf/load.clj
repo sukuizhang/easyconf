@@ -33,18 +33,22 @@
 
 (def ^:private seek (atom 0))
 
+(defn process-ns-script [script]
+  (let [ns-name (parse-ns-name script)]
+    (or (and ns-name
+             [(symbol ns-name) script])
+        (let [auto-ns-name (str "conf-namespace-auto" (swap! seek inc))]
+          [(symbol auto-ns-name) (str "(ns " auto-ns-name ")\n" script)]))))
+
 (defn load-script [script]
-  (let [p-fn (fn [script]
-               (let [ns-name (parse-ns-name script)]
-                 (or (and ns-name
-                          [(symbol ns-name) script])
-                     (let [auto-ns-name (str "conf-namespace-auto" (swap! seek inc))]
-                       [(symbol auto-ns-name (str "(ns " auto-ns-name ")\n" script))]))))
-        [ns-sym script] (p-fn script)]
+  (let [[ns-sym script] (process-ns-script script)]
     (load-string script)
     (find-ns ns-sym)))
 
 (def ^:private confs (atom nil))
+(def ^:private loaded (atom false))
+(defonce ^:private no-useless-config :no-useless-config)
+(defonce ^:private all-var-has-config :all-var-has-config)
 
 (defn add-conf-value [file-name ns conf-name value]
   (let [conf {:file-name file-name :ns ns :conf-name conf-name :value (var-get value)}]
@@ -57,14 +61,29 @@
     (doseq [[var-sym var] (ns-publics ns)]
       (add-conf-value file-name ns (name var-sym) var))))
 
-(defn load-conf-path
-  [path]
-  (let [resources (->> (file-seq (File. path))
-                       (map #(.getAbsolutePath %1))
-                       (filter #(or (.endsWith %1 ".clj") (.endsWith %1 ".properties"))))
-        loader (fn [file-name] (->> file-name
-                                   read-script
-                                   load-script
-                                   (load-conf-ns file-name)))]
-    (doseq [resource resources]
-      (monitor/monitor resource resource {:visit-file [loader]}))))
+(defn resources
+  [path] 
+  (->> (file-seq (File. path))
+       (map #(.getAbsolutePath %1))
+       (filter #(or (.endsWith %1 ".clj") (.endsWith %1 ".properties")))))
+
+(defn loader
+  [file-name]
+  (->> file-name
+       read-script
+       load-script
+       (load-conf-ns file-name)))
+  
+(defn load-conf-path0
+  [path resources loader]
+  (or @loaded
+      (swap! loaded 
+             (fn [_]
+               (doseq [resource resources]
+                 (monitor/monitor resource resource {:visit-file [loader]}))
+               true))))
+
+(defn load-conf-path [path] (load-conf-path0 path resources loader))
+(defn check-no-useless-config? [] (:no-useless-config @confs))
+(defn check-all-var-has-config? [] (:all-var-has-config @confs))
+(defn all-confs [] @confs)
