@@ -1,6 +1,7 @@
 (ns easyconf.load
   (:require [resource-monitor.core :as monitor]
-            [easyconf.confs :as confs])
+            [easyconf.confs :as confs]
+            [clojure.tools.logging :as logging])
   (:import [java.io File FileInputStream InputStreamReader BufferedReader]))
 
 (defn parse-ns-name
@@ -73,7 +74,6 @@
 (defn loader
   "a loader used to load config items from special file."
   [file-name]
-  (println (str "reload file:" file-name))
   (->> file-name
        read-script
        load-script
@@ -86,6 +86,7 @@
       (swap! loaded 
              (fn [_]
                (doseq [resource (resources path)]
+                 (logging/info (str "install config resource:" path))
                  (monitor/monitor resource resource {:visit-file [loader]}))
                true))))
 

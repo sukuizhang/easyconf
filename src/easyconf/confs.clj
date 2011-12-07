@@ -1,6 +1,7 @@
 (ns easyconf.confs
   (:require [resource-monitor.core :as monitor]
-            [clojure.set :as set])
+            [clojure.set :as set]
+            [clojure.tools.logging :as logging])
   (:import [java.io File FileInputStream InputStreamReader BufferedReader]))
 
 (comment "all config vars, normally it add in when compile source file")
@@ -30,6 +31,7 @@
   "change root binding of the var, a validate will be take if it announce on the var use :validator meta, and you can assign validate fail message.
  when your config value is string and var type is not, it load this config string to clojure data and use it as new value. var type from :tag meta or the initial var value, if not, it guess it as string"
   [var conf]
+  (logging/info (str "inject config value:" conf " to var:" var))
   (let [m-var (meta var)
         require-type (or (m-var :tag (type (var-get var)))
                          String)
@@ -52,7 +54,7 @@
   [var]
   (let [key (keyword (or (:conf-name (meta var)) (.sym var)))
         conf (key @conf-vals)]
-    (println (str "add var:" var " inject from:" conf))
+    (logging/info (str "add var:" var " inject from:" conf))
     (swap! conf-vars assoc key var)
     (if conf (set-var var conf))))
 
@@ -62,7 +64,7 @@
   (let [key (keyword conf-name)
         var (key @conf-vars)
         conf {:file-name file-name :ns ns :conf-name conf-name :value (var-get value)}]
-    (println (str "add config item:" conf " inject to var:" var))
+    (logging/info (str "add config item:" conf " inject to var:" var))
     (swap! conf-vals assoc key conf)
     (if var (set-var var conf))))
 
