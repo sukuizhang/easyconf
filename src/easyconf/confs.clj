@@ -44,7 +44,7 @@
         validate-msg (and validator
                           (let [result (validator value)]
                             (or (and (string? result) result)
-                                (and (not result) (m-var :validate-msg "validate fail !")))))]
+                                (and (not (nil? result)) (not result) (m-var :validate-msg "validate fail !")))))]
     (validate-err var conf validate-msg)
     (.bindRoot var value)
     var))
@@ -79,11 +79,19 @@
                                        (set/difference
                                         (set (keys @conf-vars))
                                         (set (keys @conf-vals))))}
+        not-option (fn [key] (not-any? #(= key %) check-options))
         error-msgs (-> errors
-                       (update-in [:useless]
-                                  #(map (fn [key] (str "useless config item:" (key @conf-vals))) %))
-                       (update-in [:config-not-found] #(map (fn [key] (str "config loss var:" (key @conf-vars))) %)))]
-    (->> (apply conj (:useless errors) (:config-not-found errors))
+                       (assoc-in [:useless] (->> (:useless errors)
+                                              (filter not-option)
+                                              (map (fn [key] (str "useless config item:" (key @conf-vals))))))
+                       (assoc-in [:config-not-found] (->> (:config-not-found errors)
+                                                     (filter not-option)
+                                                     (map (fn [key] (str "not config var:" (key @conf-vars)))))))
+        msg (->> (or (and (< 0 (count (:config-not-found error-msgs)))
+                  (apply conj (:useless error-msgs) (:config-not-found error-msgs)))
+             (:useless error-msgs))
          (interpose "\n")
          (apply str)
-         (str "check error msgs:\n"))))
+         (#(if (< 0 (count %)) (str "check error msgs:\n" %))))]
+    (if msg
+      (throw (Exception. msg)))))
