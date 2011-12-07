@@ -3,7 +3,9 @@
             [easyconf.vars :as vars])
   (:import [java.io File FileInputStream InputStreamReader BufferedReader]))
 
-(defn parse-ns-name [script]
+(defn parse-ns-name
+  "parse ns name from clojure script, find (ns ...) mark to parse"
+  [script]
   (let [pattern #"[(]ns\s+[a-zA-Z_-][a-zA-Z0-9_.-]*\s*"
         matches (re-seq pattern script)]
     (if (not (empty? matches)) 
@@ -13,6 +15,8 @@
           (.trim)))))
 
 (defn read-script
+  "read clojure script from file, support *.clj file and *.properties file
+   as you see below, we translate content in *.properties files to clojure script."
   [file-name]
   (cond  (.endsWith file-name ".clj")
          (slurp file-name)
@@ -33,41 +37,42 @@
 
 (def ^:private seek (atom 0))
 
-(defn process-ns-script [script]
+(defn process-ns-script
+  "for purpose that you can skip ns define, when this instance, we add a (ns ...) script to it.
+   in all instance, we return the ns symbol and clojure script after processed."
+  [script]
   (let [ns-name (parse-ns-name script)]
     (or (and ns-name
              [(symbol ns-name) script])
         (let [auto-ns-name (str "conf-namespace-auto" (swap! seek inc))]
           [(symbol auto-ns-name) (str "(ns " auto-ns-name ")\n" script)]))))
 
-(defn load-script [script]
+(defn load-script
+  "load clojure script,and then return the corresponding namespace."
+  [script]
   (let [[ns-sym script] (process-ns-script script)]
     (load-string script)
     (find-ns ns-sym)))
 
-(def ^:private confs (atom nil))
+(comment "help confirmming that do once load only.")
 (def ^:private loaded (atom false))
-(defonce ^:private no-useless-config :no-useless-config)
-(defonce ^:private all-var-has-config :all-var-has-config)
-
-(defn add-conf-value [file-name ns conf-name value]
-  (let [conf {:file-name file-name :ns ns :conf-name conf-name :value (var-get value)}]
-    (swap! confs assoc (keyword conf-name) conf)
-    (vars/set-conf! conf)))
 
 (defn load-conf-ns
+  "load a namespace and add config item one by one."
   [file-name ns]
   (let [ns (find-ns ns)]
     (doseq [[var-sym var] (ns-publics ns)]
-      (add-conf-value file-name ns (name var-sym) var))))
+      (vars/add-conf-value file-name ns (name var-sym) var))))
 
 (defn resources
+  "search all valid config file in special config path."
   [path] 
   (->> (file-seq (File. path))
        (map #(.getAbsolutePath %1))
        (filter #(or (.endsWith %1 ".clj") (.endsWith %1 ".properties")))))
 
 (defn loader
+  "a loader used to load config items from special file."
   [file-name]
   (->> file-name
        read-script
@@ -75,6 +80,7 @@
        (load-conf-ns file-name)))
   
 (defn load-conf-path0
+  "load config items from special config path, and monitor change on these files, reload config on change"
   [path resources loader]
   (or @loaded
       (swap! loaded 
@@ -84,6 +90,3 @@
                true))))
 
 (defn load-conf-path [path] (load-conf-path0 path resources loader))
-(defn check-no-useless-config? [] (:no-useless-config @confs))
-(defn check-all-var-has-config? [] (:all-var-has-config @confs))
-(defn all-confs [] @confs)
