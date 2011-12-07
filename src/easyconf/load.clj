@@ -1,6 +1,6 @@
 (ns easyconf.load
   (:require [resource-monitor.core :as monitor]
-            [easyconf.vars :as vars])
+            [easyconf.confs :as confs])
   (:import [java.io File FileInputStream InputStreamReader BufferedReader]))
 
 (defn parse-ns-name
@@ -62,7 +62,7 @@
   [file-name ns]
   (let [ns (find-ns ns)]
     (doseq [[var-sym var] (ns-publics ns)]
-      (vars/add-conf-value file-name ns (name var-sym) var))))
+      (confs/add-conf-value file-name ns (name var-sym) var))))
 
 (defn resources
   "search all valid config file in special config path."

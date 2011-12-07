@@ -1,5 +1,5 @@
-(ns easyconf.test.vars
-  (:use [easyconf.vars])
+(ns easyconf.test.confs
+  (:use [easyconf.confs])
   (:use [midje.sweet]))
 
 

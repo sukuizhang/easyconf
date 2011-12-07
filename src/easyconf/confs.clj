@@ -1,4 +1,4 @@
-(ns easyconf.vars
+(ns easyconf.confs
   (:require [resource-monitor.core :as monitor]
             [clojure.set :as set])
   (:import [java.io File FileInputStream InputStreamReader BufferedReader]))
