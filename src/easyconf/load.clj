@@ -60,9 +60,8 @@
 (defn load-conf-ns
   "load a namespace and add config item one by one."
   [file-name ns]
-  (let [ns (find-ns ns)]
-    (doseq [[var-sym var] (ns-publics ns)]
-      (confs/add-conf-value file-name ns (name var-sym) var))))
+  (doseq [[var-sym var] (ns-publics ns)]
+    (confs/add-conf-value file-name ns (name var-sym) var)))
 
 (defn resources
   "search all valid config file in special config path."
@@ -74,6 +73,7 @@
 (defn loader
   "a loader used to load config items from special file."
   [file-name]
+  (println (str "reload file:" file-name))
   (->> file-name
        read-script
        load-script
@@ -85,8 +85,11 @@
   (or @loaded
       (swap! loaded 
              (fn [_]
-               (doseq [resource resources]
+               (doseq [resource (resources path)]
                  (monitor/monitor resource resource {:visit-file [loader]}))
                true))))
 
-(defn load-conf-path [path] (load-conf-path0 path resources loader))
+(defn load-conf-path
+  ([] (let [path (or (System/getProperty "conf-path") "etc")]
+        (load-conf-path path)))
+  ([path] (load-conf-path0 path resources loader)))

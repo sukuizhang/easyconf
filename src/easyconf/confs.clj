@@ -52,6 +52,7 @@
   [var]
   (let [key (keyword (or (:conf-name (meta var)) (.sym var)))
         conf (key @conf-vals)]
+    (println (str "add var:" var " inject from:" conf))
     (swap! conf-vars assoc key var)
     (if conf (set-var var conf))))
 
@@ -61,8 +62,9 @@
   (let [key (keyword conf-name)
         var (key @conf-vars)
         conf {:file-name file-name :ns ns :conf-name conf-name :value (var-get value)}]
+    (println (str "add config item:" conf " inject to var:" var))
     (swap! conf-vals assoc key conf)
-    (set-var var conf)))
+    (if var (set-var var conf))))
 
 (defn check
   "check if config items is according to define config vars"

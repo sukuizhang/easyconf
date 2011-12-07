@@ -16,3 +16,4 @@ temp
 *.gz
 .#*
 logs/
+.lein*
