@@ -54,8 +54,16 @@
   [var]
   (let [key (keyword (or (:conf-name (meta var)) (.sym var)))
         conf (key @conf-vals)]
-    (logging/info (str "add var:" var " inject from:" conf))
+    (if conf
+      (logging/info (str "add config var:" var " inject value from:" conf))
+      (logging/info (str "add config var:" var " no config value found !")))
     (swap! conf-vars assoc key var)
+    (when (not= clojure.lang.Var$Unbound (type (var-get var)))
+      (if conf
+        (logging/info (str "default config value:" (var-get var) " be overrided with config item" conf))
+        (do
+          (logging/info (str "no config value found, use default config value:" (var-get var)))
+          (swap! conf-vals assoc key (var-get var)))))
     (if conf (set-var var conf))))
 
 (defn add-conf-value
