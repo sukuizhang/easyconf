@@ -1,4 +1,4 @@
-(defproject easyconf "0.0.2"
+(defproject easyconf "0.0.3"
   :description "a directly easily config tools"
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [resource-monitor "0.0.1"]
