@@ -1,56 +1,90 @@
-easyconf
+# easyconf
 
 a very easy config tool.
 
-Usage
-1.add dependency [easyconf "0.0.1"] in your project.clj
+## Usage
 
-2.add use easyconf.core to your source unit, it provide two macro defconf and defnconf, you can use them just like def and defn.
+add to porject.clj
 
-3.when you like to make a config var, please use defconf or defnconf, instead of def or defn, like below:
+```clojure
+[easyconf "0.1.0-SNAPSHOT"]
+```
+
+### define config items that can be configured at runtime
+under easyconf.core namespace, we supply two macro defconf and
+defnconf,  the usage of these two macro just like def and defn, but
+add the ability to be configured at runtime.
+
+examples
+
+```clojure
+(defconf ^{:validator string? :validator-msg "configure value must be
+string" :conf-name "conf-string" } conf-item "default value"}
+
+(defnconf game-name [game] (str "game name : " game))
+```
+
+the meat key :validator :validator-msg :conf-name  in the define is
+optional.
+
+#### options key
+     * :validator  => the value must be a function. the easyconf will
+     invoke (f value) to identity whether the value is acceptable.
+     * :validator-msg => when the value is not invalid ,then easy will
+     throw exception with this message.
+     * :conf-name => you can chood a different configure name to be
+     used other than the default. (must be a keyword)
+
+when you like to make a config var, please use defconf or defnconf, instead of def or defn, like below:
        (defconf max-coin-per-day 5000)
 after this, you can use it just as 
       (def max-coin-per-day 5000)
 there is no difference if you do nothing else.
 
-4.put your config file into config path.
-  default config path is "etc", you can use jvm option -Dconf-path= to specify others. you can put your config file anywhere in it.
-  your config file has two format:
-  (a)clojure clj file:
-     now wirte
-     (def max-coin-per-day 50)
-     to your xyz.clj,and put it into config path, and then you will find your config var max-coin-per-day use in anywhere has change to 50.
-  (b)properties file:
-    and you also can work with properties file.
-    if you write
-    max-coin-per-day=50
-    to your xyz.properties, and put it into config path, exactly the same,you find your config var has change to 50.
-    
-   you can place many config files in your path.
 
-5.validate your config value.
-  just add :validator meta to your config var is ok, and you can add :validate-msg meta to specify error msg that will show as complie error message.
-  your validator can return boolean value (true is ok), or return string value (nil is ok).
+### change the value of the configureable items.
+under easyconf.core, we also supply two function config and
+config-once to change the value of the configureable items.
 
-6.specify config name.
- default, we use var symbol name to match config item, but some time, you will meet same var symbol name, in this instance, you can use :conf-name meta to specify other config name, for example: 
-         (defconf ^{:conf-name "max-coin-per-day"} max-coin 5000)
-then preview config would work.
+the only difference of these two functions is when you invoke
+conf-once two times with same conf-name , easyconf will throw a
+exception that does not allow you to do it, and conf does not supply
+such examination.
 
-7.monitor config file change.
-  anytime when you modify your config file, your config var will auto change without restart your system.for example, if you change your xyz.properties to:
-   max-coin-per-day=50000
-and then save it.
-  now in your running logic, this var has auto change to 50000, you do not need to restart your system. 
+```clojure
+(config :conf-string "changed config value")
+(config-once :conf-string "changed config value")
 
-8.check your config items.
-  If you has many many of config var in your project, maybe you will be worry about if you has omitted some of it, or you has write wrong config name.
-  We has two config check option, if you open it, you can find these error in complie time. They are 'no-useless-config' and 'all-var-must-config', write:
-no-useless-config=1
-all-var-must-config=1
-in any of your properties file, or 
-(def no-useless-config 1)
-(def no-useless-config 1)
-in any of your clj file.
-you can open these check options.
-after you do this, you can invoke (easyconf.confs/check) in your main.clj, when all of your config var has load in. If you has write some config error, you will meet a complie error, and show you error detail.
+;;the code below will trigger a exception
+(config-once :conf-string "change config value twice)  
+```
+
+## write autoload configure file.
+if you put a file under easyconf.config namespace, the file will be
+automaticly loaded when you first using easyconf.
+
+### recommondation
+
+you can put all you config value in a separator folder, and put the
+folder into classpath at the production phase.
+
+example
+
+```clojure
+(ns easyconf.conf.config
+  (:use [easyconf.core]))
+
+(config-once :conf-1 "conf-1")
+(config-once :conf-two "conf-two")
+(config-once :game-name (fn [id] (get {"ddz" "doudizhu"} id)))
+```
+
+## check if all the config value are used.
+
+under easyconf.confs namespace, we supply a function named check.
+
+this function will check whether all the config value be used. If not
+, it will throw a example to tell you all the config value that
+aren't used.
+
+### You should invoke this function after the bootstrap of the program.
