@@ -1,9 +1,0 @@
-provide some base example, config files are put in etc directory, include clojure clj files and properties files..
-
-normal.clj: normal example, show how to use defconf and defnconf macro, and show how config item change the var value.
-
-validate1.clj: use a boolean return type validator.
-validate2.clj: use a string return type validator.
-
-checkfail.clj: show config check, how to open check options, and show complie error message.
-checksuccess.clj: show success config check. 
