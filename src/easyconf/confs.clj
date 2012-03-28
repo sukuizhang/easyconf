@@ -19,7 +19,7 @@
   "throw a Exception when validate fail."
   [var conf msg]
   (if msg
-    (let [{:keys [file-name ns conf-name value]} conf]    
+    (let [{:keys [file-name ns conf-name value]} conf]
       (throw (Exception.
               (str "error load conf [file name:" file-name
                    " conf name:" conf-name
@@ -49,10 +49,51 @@
     (.bindRoot var value)
     var))
 
+(defn set-distribute! [dis?]
+  (System/setProperty "conf-distribute" (String/valueOf dis?)))
+
+(defn distribute?
+  []
+  (let [p (System/getProperty "conf-distribute")]
+    (and p (Boolean/valueOf p))))
+
+(defn key-for-var
+  [var & [dis?]]
+  (let [dis? (or dis? (distribute?))
+        f-simple (fn [var]
+                   (or (:conf-name (meta var)) (.sym var)))
+        f-dis (fn [var]
+                (-> var .ns .name name
+                    (.replaceAll "[-]" "_")
+                    (str "." (f-simple var))))
+        f-name (if dis? f-dis f-simple)]
+    (-> var
+        f-name
+        keyword)))
+
+(defn key-for-conf
+  [file-name conf-name & [dis?]]
+  (let [dis? (or dis? (distribute?))
+        f-dis (fn [file-name conf-name]
+                (let [path (or (System/getProperty "conf-path") "etc")
+                      path-len (.length (.getAbsolutePath (java.io.File. path)))
+                      file-name (.substring file-name (+ 1 path-len))
+                      last-index (.lastIndexOf file-name "/")
+                      last-index (if (not= -1 last-index) last-index (.lastIndexOf file-name "\\")) 
+                      prefix (if (not= -1 last-index) (.substring file-name 0 last-index) "")]
+                  (if (empty? prefix) conf-name
+                      (-> prefix
+                          (.replaceAll "[-]" "_")
+                          (.replaceAll "[/]" ".")
+                          (str "." conf-name)))))
+        key (if dis? (f-dis file-name conf-name)
+                      conf-name)]
+    (keyword key)))
+
 (defn add-var!
   "add a var to be config"
   [var]
-  (let [key (keyword (or (:conf-name (meta var)) (.sym var)))
+  (let [key (key-for-var var)
         conf (key @conf-vals)]
     (if conf
       (logging/info (str "add config var:" var " inject value from:" conf))
@@ -69,7 +110,7 @@
 (defn add-conf-value
   "add a config value"
   [file-name ns conf-name value]
-  (let [key (keyword conf-name)
+  (let [key (key-for-conf file-name conf-name)
         var (key @conf-vars)
         conf {:file-name file-name :ns ns :conf-name conf-name :value (var-get value)}]
     (logging/info (str "add config item:" conf " inject to var:" var))
@@ -79,11 +120,11 @@
 (defn check
   "check if config items is according to define config vars"
   []
-  (let [errors {:useless (and ((first check-options) @conf-vals)
+  (let [errors {:useless (if (= "1" (:value ((first check-options) @conf-vals)))
                               (set/difference
                                (set (keys @conf-vals))
                                (set (keys @conf-vars))))
-                :config-not-found (and ((first check-options) @conf-vals)
+                :config-not-found (if (= "1" (:value ((second check-options) @conf-vals)))
                                        (set/difference
                                         (set (keys @conf-vars))
                                         (set (keys @conf-vals))))}
