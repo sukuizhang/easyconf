@@ -2,12 +2,14 @@
 
 a very easy config tool.
 
+2012-3-28 Release 0.1.0
+
 ## Usage
 
 add to porject.clj
 
 ```clojure
-[easyconf "0.1.0-SNAPSHOT"]
+[easyconf "0.1.0"]
 ```
 
 ### define config items that can be configured at runtime
@@ -56,7 +58,7 @@ such examination.
 (config-once :conf-string "changed config value")
 
 ;;the code below will trigger a exception
-(config-once :conf-string "change config value twice)  
+(config-once :conf-string "change config value twice")  
 ```
 
 ## write autoload configure file.
