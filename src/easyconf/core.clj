@@ -20,7 +20,7 @@
 
 ;;all configure file must be put under easyconf.conf namespace
 ;;preload to guarantee the config value will be loaded first.
-(def delay-load (delay (confs/load-ns) 'easyconf.conf))
+(def delay-load (delay (confs/load-ns) 'config))
 
 (defmacro defconf
   "use it just like (def ...), and it will inject config value to def var."

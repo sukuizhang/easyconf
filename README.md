@@ -60,7 +60,7 @@ such examination.
 ```
 
 ## write autoload configure file.
-if you put a file under easyconf.config namespace, the file will be
+if you put a file under config namespace, the file will be
 automaticly loaded when you first using easyconf.
 
 ### recommondation
@@ -71,7 +71,7 @@ folder into classpath at the production phase.
 example
 
 ```clojure
-(ns easyconf.conf.config
+(ns config.autoload
   (:use [easyconf.core]))
 
 (config-once :conf-1 "conf-1")

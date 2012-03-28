@@ -1,4 +1,4 @@
-(ns easyconf.conf.config
+(ns config.autoload
   (:use [easyconf.core]))
 
 (config-once :conf-1 "conf-1")
