@@ -1,6 +1,7 @@
 (ns easyconf.confs
   (:require [clojure.set :as set]
-            [clojure.tools.logging :as logging]))
+            [clojure.tools.logging :as logging]
+            [clojure.tools.namespace :as namespace]))
 
 
 ;;every conf-name correspends to a unique clojure var
@@ -19,17 +20,24 @@
 
 (defn get-conf-name
   [var]
-  (keyword (or (:conf-name (meta var)) (.sym var))))
+  (let [meta-var (meta var)]
+    (keyword (or (:conf-name meta-var)
+                 (:name meta-var)))))
 
 (defn validate-err
   "throw a Exception when validate fail."
   [var f value msg]
-  (when-not (f value) 
+  (when (and f (not (f value))) 
     (throw (RuntimeException.
             (str "error load config , conf-name " (get-conf-name var)
-                 " value:" value     
-                 "to " var
+                 " value: " value     
+                 " to " var
                  "\nmsg: " msg)))))
+
+(defn if-conf-defined
+  "judge whether the conf-name is defined"
+  [conf-name]
+  (find @conf-vals conf-name))
 
 (defn set-var-value
   "change root binding of the var, a validate will be take if it announce on the var use :validator meta, and you can assign validate fail message."
@@ -39,11 +47,12 @@
         validator (:validator m-var)
         validate-msg (:validator-msg m-var)]
     (validate-err var validator value validate-msg)
-    (.bindRoot var value)
+    (alter-var-root var (constantly value))
     var))
 
 (defn config-value
   "change the var value"
+  ^{:pre [(keyword? conf-name)]}
   [conf-name value]
   (swap! conf-vals assoc conf-name value)
   (when (find @conf-vars conf-name)
@@ -62,21 +71,23 @@
   "add a var to be configured"
   [var]
   (let [conf-name (get-conf-name var)
-        unbound (= clojure.lang.Var$Unbound (type (var-get var)))]
+        unbound (= clojure.lang.Var$Unbound (type (var-get var)))
+        defined (if-conf-defined conf-name)]
     (swap! conf-vars assoc conf-name var)
     (if unbound
-      (if (not (find @conf-vals conf-name))
+      (if-not defined
         (throw (RuntimeException. (str "var: " var " can not find config value")))
         (logging/info "var " var
                       " cannot find config value , using default: "
                       (var-get var)))
-      (set-var-value var (conf-name @conf-vals)))))
+      (when defined
+        (set-var-value var (conf-name @conf-vals))))))
 
 (defn check
   "check if all config values are used"
   []
   (let [vals-keys (set (keys @conf-vals))
-        vals-vars (set (keys @conf-vars))
+        vars-keys (set (keys @conf-vars))
         diff (set/difference vals-keys vars-keys)]
     (when-not (seq diff)
       (throw (RuntimeException. (str "config " diff " haven't be used" ))))))
