@@ -93,7 +93,7 @@ aren't used.
 
 under easyconf.confs namespace, we supply a function named config-var-script.
 
-this function will collect all config var you had define in deploy
+this function will collect all config var you had define in develop
 phase, and then create an config namepace template with default value
 for you.you can run it to create the config template and then modify
 it with your product phase value. 
