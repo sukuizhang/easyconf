@@ -91,3 +91,21 @@
         diff (set/difference vals-keys vars-keys)]
     (when-not (seq diff)
       (throw (RuntimeException. (str "config " diff " haven't be used" ))))))
+
+(defn config-var-script
+  [var]
+  (-> (:comment (meta var))
+      (#(if % (str ";" % "\n")))
+      (str "(config-once " (get-conf-name var) " " (pr-str (var-get var)) ")\n")))
+
+(defn config-script
+  "create a config template file."
+  [& [path]]
+  (let [ns-file (str (or path "test") "/config/autocreate.clj")
+        head "(ns config.autocreate\n  (:use    [easyconf.core]))\n\n"
+        script (->> @conf-vars
+                    vals
+                    (map config-var-script)
+                    (cons head)
+                    (apply str))]
+    (spit ns-file script)))

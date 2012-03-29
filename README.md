@@ -89,4 +89,14 @@ this function will check whether all the config value be used. If not
 , it will throw a example to tell you all the config value that
 aren't used.
 
+## auto create config namespace with default value.
+
+under easyconf.confs namespace, we supply a function named config-var-script.
+
+this function will collect all config var you had define in develop
+phase, and then create an config namepace template with default value
+for you.you can run it to create the config template and then modify
+it with your product phase value. 
+
 ### You should invoke this function after the bootstrap of the program.
+
