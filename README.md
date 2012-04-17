@@ -2,14 +2,14 @@
 
 a very easy config tool.
 
-2012-3-28 Release 0.1.0
+2012-4-17 Release 0.1.1
 
 ## Usage
 
 add to porject.clj
 
 ```clojure
-[easyconf "0.1.0"]
+[easyconf "0.1.1"]
 ```
 
 ### define config items that can be configured at runtime
