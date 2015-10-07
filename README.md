@@ -44,9 +44,9 @@ after this, you can use it just as
 there is no difference if you do nothing else.
 
 
-### change the value of the configureable items.
+### change the value of the configurable items.
 under easyconf.core, we also supply two function config and
-config-once to change the value of the configureable items.
+config-once to change the value of the configurable items.
 
 the only difference of these two functions is when you invoke
 conf-once two times with same conf-name , easyconf will throw a
